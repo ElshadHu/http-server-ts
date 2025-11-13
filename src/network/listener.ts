@@ -1,4 +1,4 @@
-import net from 'net';
+import * as net from 'net';
 import { SocketState, Address, ListenerConfig, ConnectionCallBack, IListener } from './types';
 import { Connection } from './connection';
 export class Listener implements IListener {
