@@ -1,12 +1,12 @@
 import net from 'net';
 import { SocketState, Address, ListenerConfig, ConnectionCallBack, IListener } from './types';
 import { Connection } from './connection';
-class Listener implements IListener {
+export class Listener implements IListener {
     private server: net.Server;
     private state: SocketState;
     private address: Address = {host:'', port:0};
 
-    constructor(private config: ListenerConfig) {
+    constructor(config: ListenerConfig) {
         this.address = {host: config.host, port: config.port};
         this.server = net.createServer();
         this.state = SocketState.CREATED;
@@ -40,7 +40,24 @@ class Listener implements IListener {
     }
 
     getAddress(): Address {
-        return this.address;
+    const addr = this.server.address();
+    if (typeof addr === 'object' && addr !== null) {
+        return { host: addr.address, port: addr.port };
     }
+    return this.address;
+    }
+
+    destroy(): void {
+        if(this.server.listening) {
+            this.server.close(() => {
+                this.state = SocketState.CLOSED;
+            });
+        } else {
+            this.state = SocketState.CLOSED;
+        }
+
+        this.server.removeAllListeners();
+    }
+
 
 }
