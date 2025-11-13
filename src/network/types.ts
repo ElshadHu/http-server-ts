@@ -15,7 +15,7 @@ export type Address = {
 }
 
 export type RemoteAddress = {
-    id: string; // client's IP
+    ip: string; // client's IP
     port: number; // client's port
 }
 
@@ -24,7 +24,8 @@ export type RemoteAddress = {
 export type ListenerConfig = {
     port: number;
     host: string;
-    backlog?: number // max pending connections
+    backlog?: number; // max pending connections
+    connectionTimeoutMs?: number;
 }
 
 // Info Types
@@ -39,7 +40,7 @@ export type ConnectionInfo = {
 // Callback types
 
 export type ConnectionCallBack = (connection: IConnection) => void | Promise<void>;
-export type DataCallback = (data: any) => void;
+export type DataCallback = (data: Buffer | string) => void;
 export type CloseCallback = () => void;
 export type ErrorCallBack = (error: Error) => void;
 
@@ -55,7 +56,7 @@ export interface IListener {
 }
 
 export interface IConnection {
-    write(data: Buffer | string): boolean;
+    write(data: Buffer | string): Promise<boolean>;
     onData(callback: DataCallback): void;
     onClose(callback: CloseCallback): void;
     onError(callback:ErrorCallBack): void;
@@ -64,5 +65,5 @@ export interface IConnection {
     getRemoteAddress(): RemoteAddress;
     getState(): SocketState;
     getId(): string;
-
+    setTimeout(ms: number):void;
 }
