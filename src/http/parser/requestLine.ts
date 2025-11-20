@@ -17,7 +17,7 @@ export interface ParsedRequestLine {
     version: string;
 }
 
-export class ReuqestLine {
+export class RequestLine {
     private static readonly VALID_METHODS = [
     'GET', 'POST', 'PUT', 'DELETE', 'PATCH', 
     'HEAD', 'OPTIONS', 'TRACE', 'CONNECT'
