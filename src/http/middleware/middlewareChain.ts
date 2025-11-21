@@ -9,17 +9,21 @@ export class MiddlewareChain {
         this.middlewares.push(middware);
     }
 
-    run(req: HttpRequest, res: HttpResponse): void {
-        let i = 0;
-        const next = () => {
-            if(i < this.middlewares.length) {
-               const middleware = this.middlewares[i++];
-           if (!middleware) {
-                throw new Error("Undefined middleware detected at position " + (i - 1));
+run(req: HttpRequest, res: HttpResponse, finalHandler?: () => void): void {
+    let i = 0;
+    const next = (): void => {
+        if (i >= this.middlewares.length) {
+            if (finalHandler) {
+                finalHandler();
             }
-            middleware(req,res,next);
-        };
-        next();
-    }
-  }
+            return;  
+        }
+        const middleware = this.middlewares[i++];
+        if (!middleware) {
+            throw new Error(`Undefined middleware at position ${i - 1}`);
+        }
+        middleware(req, res, next);  
+    };
+    next();  
+}  
 }
