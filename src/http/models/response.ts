@@ -31,7 +31,7 @@ export class HttpResponse {
 
     //set json body
 
-    setJsonBody(data: string): void {
+    setJsonBody(data: unknown): void {
         const json = JSON.stringify(data);
         this.setBody(json);
         this.headers.setContentType('application/json');
