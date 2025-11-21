@@ -1,5 +1,10 @@
 import { Headers } from "../models/headers";
-import { parseLine } from "./re"
+
+interface ParsedHeader {
+    name: string;
+    value: string;
+}
+
 export class HeaderParser {
     
     static parseSingleHeader(line: string): ParsedHeader | null {
@@ -23,6 +28,9 @@ export class HeaderParser {
 
         return headers;
     }
-
+    
+    static isEndOfHeaders(line:string): boolean {
+        return line.trim().length === 0;
+    }
 
 }

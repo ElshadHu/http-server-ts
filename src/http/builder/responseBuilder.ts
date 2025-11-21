@@ -1,4 +1,4 @@
-import { StatusLine } from "./StatusLine";
+import { StatusLine } from "./statusLine";
 import { HeaderBuilder } from "./headerBuilder";
 import { HttpStatusCode } from "../models/StatusCode";
 
