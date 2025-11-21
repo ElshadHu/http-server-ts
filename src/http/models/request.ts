@@ -17,6 +17,7 @@ export  class HttpRequest {
     version: string;
     headers: Headers;
     body: string;
+    parsedBody?: Record<string,unknown>
     rawRequest: string;
 
     queryParams: Map<string, string>;

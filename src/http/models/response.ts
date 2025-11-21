@@ -19,6 +19,9 @@ export class HttpResponse {
         this.headers.set('Server', 'CustomizedHTTP/1.0');
     }
 
+    setStatus(code: HttpStatusCode): void {
+        this.statusCode = code;
+    }
     // set Resonse body and content-length
 
     setBody(body: string): void {
