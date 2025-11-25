@@ -22,7 +22,7 @@ export class ResponseBuilder {
     }
     build(): string {
         if(!this.headers.get('Content-Length') && this.body) {
-            this.setHeader('Content:Length',
+            this.setHeader('Content-Length',
             Buffer.byteLength(this.body).toString());
           }
             return(

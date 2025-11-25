@@ -49,18 +49,14 @@ listener.onConnection((conn: IConnection) => {
             
             const response: HttpResponse = new HttpResponse();
 
-            middlewareChain.run(request, response, () => {
+            middlewareChain.run(request, response, () => { // next
                 handleRequest(request, response);
             });
-
             // Serialize response to HTTP
             const responseSerialized = response.toString();
-
             // Send TCP bytes back
             await conn.write(responseSerialized);
-
             conn.close();
-
             buffer = Buffer.alloc(0);
         } catch (err) {
             console.error('[Error]', err);
@@ -111,7 +107,9 @@ function handleRequest(req: HttpRequest, res: HttpResponse): void {
         const name = req.parsedBody.name;
         const age = req.parsedBody.age;
 
-        if (typeof name !== 'string' || typeof age !== 'number') {
+        const ageNum = typeof age === 'string' ? parseInt(age, 10) : typeof age === 'number' ? age : NaN;
+
+        if (typeof name !== 'string' || isNaN(ageNum)) {
             res.setStatus(HttpStatusCode.BAD_REQUEST);
             res.setJsonBody({ error: 'Invalid data types' });
             return;
@@ -120,7 +118,7 @@ function handleRequest(req: HttpRequest, res: HttpResponse): void {
         res.setStatus(HttpStatusCode.CREATED);
         res.setJsonBody({
             message: 'User created',
-            user: { name, age }
+            user: { name, age: ageNum }
         });
         return;
     }

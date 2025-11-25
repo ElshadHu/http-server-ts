@@ -1,6 +1,5 @@
 import { Middleware } from "./types";
 import { HttpStatusCode } from "../models/StatusCode";
-import { timeStamp } from "console";
 
 export const ErrorHandlerMiddleware: Middleware = (req,res,next) => {
     try{
