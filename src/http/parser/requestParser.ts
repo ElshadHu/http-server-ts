@@ -2,7 +2,6 @@ import { HttpRequest, HttpMethod } from "../models/request";
 import { RequestLine } from "./requestLine";
 import { HeaderParser } from "./headerParser";
 import { BodyParser } from "./bodyParser";
-
  /**
   * Parse complete HTTP request from buffer
   * 
@@ -58,16 +57,14 @@ export class RequestParser {
 
         currentLine++;
 
-        let bodyStartPosition: number = 0;
-        // Calculate where body starts in the buffer
-
-        for(let i = 0; i<= currentLine; i++) {
-            if(i <lines.length && lines[i] !== undefined) {
-                bodyStartPosition += Buffer.byteLength(lines[i] + '\r\n', 'utf-8');
-            }
+        const headerEndMarker = `\r\n\r\n`;
+        const headerEndIndex = rawRequest.indexOf(headerEndMarker);
+        let bodyStartPosition: number;
+        if(headerEndIndex !== -1) {
+            bodyStartPosition = headerEndIndex + headerEndMarker.length;
+        } else {
+            bodyStartPosition = rawRequest.length;
         }
-
-        // Parse the body
         const bodyResult = BodyParser.parse(buffer, request.headers, bodyStartPosition);
         request.body = bodyResult.body;
 
