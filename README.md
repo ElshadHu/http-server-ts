@@ -28,21 +28,42 @@ Eventually, I want this server to kinda do everything I'd expect a "real" server
 
 **Repo layout (initial plan which can be changed)**
 ```text
-http-server-typescript/
+http-server-ts/
+│
 ├── src/
-│   ├── main.ts             # where the mess starts
-│   ├── network/            # all the socket junk
-│   ├── http/               # will try to parse HTTP here
-│   ├── router/             # routes 
-│   ├── utils/              # common utility functions
-│   └── types/              # types for not breaking stuff
-├── tests/                  # when I decide to get serious
-├── public/                 # if I get to serving real files
-├── docs/                   # how I struggled or learned
-├── package.json
-├── tsconfig.json
-├── .gitignore
-└── README.md
+│   ├── http/
+│   │   ├── builder/
+│   │   │   ├── headerBuilder.ts         # Builds header strings
+│   │   │   ├── responseBuilder.ts       # Fluent API for building responses
+│   │   │   └── statusLine.ts            # Builds "HTTP/1.1 200 OK"
+│   │   │
+│   │   ├── middleware/
+│   │   │   ├── bodyParserMiddleware.ts      # Parses JSON/form data → req.parsedBody
+│   │   │   ├── errorhandlermiddleware.ts    # Global try-catch wrapper
+│   │   │   ├── loggerMiddleware.ts          # Logs requests & responses with timing
+│   │   │   ├── middlewareChain.ts           # Executes middleware in sequence
+│   │   │   └── types.ts                     # Middleware type definition
+│   │   │
+│   │   ├── models/
+│   │   │   ├── headers.ts               # Case-insensitive header storage
+│   │   │   ├── request.ts               # HttpRequest: method, path, headers, body, parsedBody
+│   │   │   ├── response.ts              # HttpResponse: statusCode, headers, body, toString()
+│   │   │   └── StatusCode.ts            # HTTP status codes enum & messages
+│   │   │
+│   │   └── parser/
+│   │       ├── bodyParser.ts            # Extracts body using Content-Length
+│   │       ├── headerParser.ts          # Parses header lines into Headers object
+│   │       ├── requestLine.ts           # Parses "POST /api/users HTTP/1.1"
+│   │       └── requestParser.ts         # Parses complete HTTP request from buffer
+│   │
+│   ├── main.ts                          # Entry point: creates listener, middleware, routes
+│   │
+│   └── network/
+│       ├── connection.ts                # Wraps socket: onData, onClose, write, close
+│       ├── listener.ts                  # Creates TCP server, accepts connections
+│       └── types.ts                     # IListener, IConnection interfaces
+│
+└── README.md                            # Project documentation
 ```
 
 ## Next Steps
