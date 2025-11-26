@@ -66,4 +66,5 @@ export interface IConnection {
     getState(): SocketState;
     getId(): string;
     setTimeout(ms: number):void;
+    isAlive(): boolean;
 }

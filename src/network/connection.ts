@@ -32,6 +32,7 @@ export class Connection implements IConnection {
           });
        })
     }
+    
 
     onData(callback: DataCallback): void {
         this.dataCallback = callback;
@@ -76,5 +77,11 @@ export class Connection implements IConnection {
        this.socket.on('timeout', () => {
         this.socket.end();
        });
+    }
+
+    isAlive(): boolean {
+        return this.state === SocketState.CONNECTED &&
+        !this.socket.destroyed &&
+        this.socket.writable;
     }
 }
