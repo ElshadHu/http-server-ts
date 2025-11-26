@@ -40,6 +40,17 @@ listener.onConnection((conn: IConnection) => {
     conn.onData(async (data: Buffer | string) => {
         try {
             const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data);
+            
+            if(requestBuffer.getSize() + chunk.length > 10 * 1024 * 1024) {
+                if(conn.isAlive()) {
+                const errorResponse = new HttpResponse(HttpStatusCode.TOO_LARGE_REQUEST);
+                errorResponse.setHtmlBody('<h1>413 Too Large Request</h1>');
+                await conn.write(errorResponse.toString());
+                }
+                conn.close();
+                return;
+            }
+            
             requestBuffer.append(chunk);
 
             if (!requestBuffer.hasCompleteHeaders()) {
@@ -62,10 +73,14 @@ listener.onConnection((conn: IConnection) => {
                 response.headers.set('Keep-Alive', keepAliveManager.getKeepAliveHeader());
             }
             const responseSerialized = response.toString();
+
+            if(conn.isAlive()) {
             await conn.write(responseSerialized);
+            }
+
             keepAliveManager.incrementRequests();
             
-            if(!keepAliveManager.shouldKeepAlive()) {
+            if(!keepAliveManager.shouldKeepAlive() && conn.isAlive()) {
                 console.log(`Closing connection after ${keepAliveManager.getStats().requestCount} requests`);
                 conn.close();
             }
@@ -74,16 +89,22 @@ listener.onConnection((conn: IConnection) => {
         } catch (err) {
             console.error('[Error]', err);
             try {
+                if(conn.isAlive()) {
                 const errorResponse = new HttpResponse(HttpStatusCode.INTERNAL_SERVER_ERROR);
                 errorResponse.setHtmlBody('<h1>500 Internal Server Error</h1>');
                 await conn.write(errorResponse.toString());
+                }
             } catch {}
+
+            if(conn.isAlive()) {
             conn.close();
+            }
         }
     });
 
     conn.onClose(() => {
         console.log(`Client disconnected: ${conn.getId()}`);
+        requestBuffer.reset();
     });
 
     conn.onError((err) => {
