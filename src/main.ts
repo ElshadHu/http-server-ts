@@ -1,6 +1,7 @@
 // Network
 import { Listener } from './network/listener';
 import { IConnection } from "./network/types";
+import { RequestBuffer } from './network/requestBuffer';
 
 // Http protocol
 import { RequestParser } from './http/parser/requestParser';
@@ -33,17 +34,19 @@ listener.onConnection((conn: IConnection) => {
 
     conn.setTimeout(30000);
 
-    let buffer = Buffer.alloc(0);
+    const requestBuffer = new RequestBuffer();
 
     conn.onData(async (data: Buffer | string) => {
         try {
             const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data);
-            buffer = Buffer.concat([buffer, chunk]);
+            requestBuffer.append(chunk);
 
-            if (!hasCompleteHeaders(buffer)) {
+            if (!requestBuffer.hasCompleteHeaders()) {
                 console.log('Waiting for complete request');
                 return;
             }
+
+            const buffer = requestBuffer.toBuffer();
             const request: HttpRequest = RequestParser.parse(buffer);
             console.log(`[HTTP] ${request.method} ${request.path}`);
             
@@ -57,7 +60,7 @@ listener.onConnection((conn: IConnection) => {
             // Send TCP bytes back
             await conn.write(responseSerialized);
             conn.close();
-            buffer = Buffer.alloc(0);
+            requestBuffer.reset();
         } catch (err) {
             console.error('[Error]', err);
             try {
@@ -124,10 +127,6 @@ function handleRequest(req: HttpRequest, res: HttpResponse): void {
     }
     res.setStatus(HttpStatusCode.NOT_FOUND);
     res.setHtmlBody('<h1>404 Not Found</h1>');
-}
-
-function hasCompleteHeaders(buffer: Buffer): boolean {
-     return buffer.includes('\r\n\r\n');
 }
 
 listener.listen();
