@@ -2,7 +2,7 @@
 import { Listener } from './network/listener';
 import { IConnection } from "./network/types";
 import { RequestBuffer } from './network/requestBuffer';
-
+import { KeepAliveManager } from './network/keepAliveManager';
 // Http protocol
 import { RequestParser } from './http/parser/requestParser';
 import { HttpRequest } from './http/models/request';
@@ -32,9 +32,10 @@ middlewareChain.use(BodyParserMiddleware);
 listener.onConnection((conn: IConnection) => {
     console.log(`Client connected: ${conn.getId()}`);
 
-    conn.setTimeout(30000);
+    conn.setTimeout(60000);
 
     const requestBuffer = new RequestBuffer();
+    const keepAliveManager = new KeepAliveManager();
 
     conn.onData(async (data: Buffer | string) => {
         try {
@@ -55,11 +56,20 @@ listener.onConnection((conn: IConnection) => {
             middlewareChain.run(request, response, () => { // next
                 handleRequest(request, response);
             });
-            // Serialize response to HTTP
+
+            response.headers.set('Connection', keepAliveManager.getConnectionHeader());
+            if(keepAliveManager.shouldKeepAlive()) {
+                response.headers.set('Keep-Alive', keepAliveManager.getKeepAliveHeader());
+            }
             const responseSerialized = response.toString();
-            // Send TCP bytes back
             await conn.write(responseSerialized);
-            conn.close();
+            keepAliveManager.incrementRequests();
+            
+            if(!keepAliveManager.shouldKeepAlive()) {
+                console.log(`Closing connection after ${keepAliveManager.getStats().requestCount} requests`);
+                conn.close();
+            }
+     
             requestBuffer.reset();
         } catch (err) {
             console.error('[Error]', err);
