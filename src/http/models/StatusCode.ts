@@ -20,6 +20,7 @@ export enum HttpStatusCode {
     FORBIDDEN = 403,
     NOT_FOUND = 404,
     METHOD_NOT_ALLOWED = 405,
+    TOO_LARGE_REQUEST = 413,
 
     //5xx Server Errors
     INTERNAL_SERVER_ERROR = 500,
@@ -43,6 +44,7 @@ export const StatusMessages: Record<HttpStatusCode, string> = {
     [HttpStatusCode.FORBIDDEN]: 'Forbidden',
     [HttpStatusCode.NOT_FOUND]: 'Not Found',
     [HttpStatusCode.METHOD_NOT_ALLOWED]: 'Method Not Allowed',
+    [HttpStatusCode.TOO_LARGE_REQUEST]: 'Too Large Request',
     [HttpStatusCode.INTERNAL_SERVER_ERROR]: 'Internal Server Error',
     [HttpStatusCode.NOT_IMPLEMENTED]: 'Not Implemented',
     [HttpStatusCode.BAD_GATEWAY]: 'Bad Gateway',
