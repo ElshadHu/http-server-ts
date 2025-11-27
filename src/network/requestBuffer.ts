@@ -2,8 +2,13 @@
 export class RequestBuffer {
     private chunks: Buffer[] = [];
     private totalSize = 0;
+    private readonly MAX_SIZE = 10 * 1024 * 1024; // 10MB limit
 
     append(chunk: Buffer): void {
+
+        if(this.totalSize + chunk.length > this.MAX_SIZE) {
+            throw new Error('Request is too large');
+        }
         this.chunks.push(chunk);
         this.totalSize += chunk.length;
     }
@@ -53,13 +58,18 @@ export class RequestBuffer {
         return this.totalSize;
     }
 
+    isLarger(): boolean {
+        return this.totalSize > this.MAX_SIZE;
+    }
+
     getStats() {
         return {
             chunks: this.chunks.length,
             totalBytes: this.totalSize,
             avgChunkSize: this.chunks.length > 0
             ? Math.round(this.totalSize / this.chunks.length)
-            : 0
+            : 0,
+            maxSize: this.MAX_SIZE
         };
     }
 }
