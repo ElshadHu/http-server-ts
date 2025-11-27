@@ -1,164 +1,33 @@
-// Network
-import { Listener } from './network/listener';
-import { IConnection } from "./network/types";
-import { RequestBuffer } from './network/requestBuffer';
-import { KeepAliveManager } from './network/keepAliveManager';
-// Http protocol
-import { RequestParser } from './http/parser/requestParser';
-import { HttpRequest } from './http/models/request';
-import { HttpResponse } from './http/models/response';
-import { HttpStatusCode } from './http/models/StatusCode';
+import { HttpServer } from "./server/httpServer";
+import { registerRoutes } from "./routes";
 
-// Middleware
-import { MiddlewareChain } from './http/middleware/middlewareChain';
-import { ErrorHandlerMiddleware } from './http/middleware/errorhandlermiddleware';
-import { LoggerMiddleware } from './http/middleware/loggerMiddleware';
-import { BodyParserMiddleware } from './http/middleware/bodyParserMiddleware';
+import { ErrorHandlerMiddleware } from "./http/middleware/errorhandlermiddleware";
+import { LoggerMiddleware } from "./http/middleware/loggerMiddleware";
+import { BodyParserMiddleware } from "./http/middleware/bodyParserMiddleware";
 
-// Set up TCP listener
-const listener = new Listener({
-    host: '127.0.0.1', 
-    port: 8080 
+const server = new HttpServer({
+    host: '127.0.0.1',
+    port: 8080,
+    keepAlive: {
+        enabled: true,
+        timeout: 60000,
+        maxRequests:100
+    }
 });
 
-// Setup Middleware chain
-const middlewareChain = new MiddlewareChain();
+server.use(ErrorHandlerMiddleware);
+server.use(LoggerMiddleware);
+server.use(BodyParserMiddleware);
 
-middlewareChain.use(ErrorHandlerMiddleware);
-middlewareChain.use(LoggerMiddleware);
-middlewareChain.use(BodyParserMiddleware);
+registerRoutes(server);
+server.start();
 
-// Handle TCP Connections
-listener.onConnection((conn: IConnection) => {
-    console.log(`Client connected: ${conn.getId()}`);
-
-    conn.setTimeout(60000);
-
-    const requestBuffer = new RequestBuffer();
-    const keepAliveManager = new KeepAliveManager();
-
-    conn.onData(async (data: Buffer | string) => {
-        try {
-            const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data);
-            
-            if(requestBuffer.getSize() + chunk.length > 10 * 1024 * 1024) {
-                if(conn.isAlive()) {
-                const errorResponse = new HttpResponse(HttpStatusCode.TOO_LARGE_REQUEST);
-                errorResponse.setHtmlBody('<h1>413 Too Large Request</h1>');
-                await conn.write(errorResponse.toString());
-                }
-                conn.close();
-                return;
-            }
-            
-            requestBuffer.append(chunk);
-
-            if (!requestBuffer.hasCompleteHeaders()) {
-                console.log('Waiting for complete request');
-                return;
-            }
-
-            const buffer = requestBuffer.toBuffer();
-            const request: HttpRequest = RequestParser.parse(buffer);
-            console.log(`[HTTP] ${request.method} ${request.path}`);
-            
-            const response: HttpResponse = new HttpResponse();
-
-            middlewareChain.run(request, response, () => { // next
-                handleRequest(request, response);
-            });
-
-            response.headers.set('Connection', keepAliveManager.getConnectionHeader());
-            if(keepAliveManager.shouldKeepAlive()) {
-                response.headers.set('Keep-Alive', keepAliveManager.getKeepAliveHeader());
-            }
-            const responseSerialized = response.toString();
-
-            if(conn.isAlive()) {
-            await conn.write(responseSerialized);
-            }
-
-            keepAliveManager.incrementRequests();
-            
-            if(!keepAliveManager.shouldKeepAlive() && conn.isAlive()) {
-                console.log(`Closing connection after ${keepAliveManager.getStats().requestCount} requests`);
-                conn.close();
-            }
-     
-            requestBuffer.reset();
-        } catch (err) {
-            console.error('[Error]', err);
-            try {
-                if(conn.isAlive()) {
-                const errorResponse = new HttpResponse(HttpStatusCode.INTERNAL_SERVER_ERROR);
-                errorResponse.setHtmlBody('<h1>500 Internal Server Error</h1>');
-                await conn.write(errorResponse.toString());
-                }
-            } catch {}
-
-            if(conn.isAlive()) {
-            conn.close();
-            }
-        }
-    });
-
-    conn.onClose(() => {
-        console.log(`Client disconnected: ${conn.getId()}`);
-        requestBuffer.reset();
-    });
-
-    conn.onError((err) => {
-        console.error('Connection error:', err);
-    });
+process.on('SIGINT', () => {
+    console.log('\n Shutting down gracefully');
+    process.exit(0);
 });
 
-function handleRequest(req: HttpRequest, res: HttpResponse): void {
-
-    if (req.method === 'GET' && req.path === '/') {
-        res.setHtmlBody('<h1>HTTP Server</h1><p>Server is running</p>');
-        return;
-    }
-
-    if (req.method === 'GET' && req.path === '/status') {
-        res.setJsonBody({
-            status: 'running',
-            uptime: process.uptime(),
-            memory: process.memoryUsage(),
-            timestamp: new Date().toISOString(),
-            pid: process.pid
-        });
-        return;
-    }
-
-    // POST /api/users
-    if (req.method === 'POST' && req.path === '/api/users') {
-        if (!req.parsedBody) {
-            res.setStatus(HttpStatusCode.BAD_REQUEST);
-            res.setJsonBody({ error: 'No body provided' });
-            return;
-        }
-
-        const name = req.parsedBody.name;
-        const age = req.parsedBody.age;
-
-        const ageNum = typeof age === 'string' ? parseInt(age, 10) : typeof age === 'number' ? age : NaN;
-
-        if (typeof name !== 'string' || isNaN(ageNum)) {
-            res.setStatus(HttpStatusCode.BAD_REQUEST);
-            res.setJsonBody({ error: 'Invalid data types' });
-            return;
-        }
-
-        res.setStatus(HttpStatusCode.CREATED);
-        res.setJsonBody({
-            message: 'User created',
-            user: { name, age: ageNum }
-        });
-        return;
-    }
-    res.setStatus(HttpStatusCode.NOT_FOUND);
-    res.setHtmlBody('<h1>404 Not Found</h1>');
-}
-
-listener.listen();
-console.log('HTTP Server running on http://127.0.0.1:8080');
+process.on('SIGTERM', () => {
+    console.log('\n Shutting down gracefully');
+    process.exit(0);
+})
