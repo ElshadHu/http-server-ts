@@ -10,13 +10,47 @@ Because, I keep making dumb mistakes in TypeScript and wanted to finally get goo
 
 ## The Plan (It Could Be a Broken Plan :) )
 
-- Get a dumb TCP echo server working. Just something you can throw bytes at and see it bounce back.
+- Get a dumb TCP echo server working. Just something you can throw bytes at and see it bounce back. - Done
 
-- Then make it barely talk HTTP. Read the raw text, parse a request line, send back the absolute minimum 200 OK response.
+- Then make it barely talk HTTP. Read the raw text, parse a request line, send back the absolute minimum 200 OK response. - Done
 
-- After that, add stuff: headers, methods, routes, maybe serve a file, maybe log a bug. As a result of it, with small challenges, I want to reach my goal and have my own http server (even if it is slow).
+- After that, add stuff: headers, methods, routes, maybe serve a file, maybe log a bug. As a result of it, with small challenges, I want to reach my goal and have my own http server (even if it is slow). - Done
+- Optimize with Keep Alive: That was spontaneous though , i was creating a connection for each request :)
+- Refactor to clean architecture:  Heyy at least I tried
+- Add Connection Pooling (I got no idea I will figure out :)) 
+- Response compression: (I will figure it out)
+- Static file caching: (I will figure it out)
 
 - I gotta figure out other stuff
+
+## Quick Start
+```bash
+npm install
+
+npm run build
+
+npm start
+
+# Server runs on http://127.0.0.1:8080
+```
+
+### Test It Out
+```bash
+# Basic request
+curl http://localhost:8080/
+
+# Get server status
+curl http://localhost:8080/status
+
+# Create a user
+curl -X POST http://localhost:8080/api/users \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Yoyo","age":46}'
+
+# Test Keep-Alive (connection reuse)
+curl -v http://localhost:8080/ http://localhost:8080/ http://localhost:8080/
+# Look for "Re-using existing connection" in output
+```
 
 ### Adding Tests
 
@@ -29,41 +63,51 @@ Eventually, I want this server to kinda do everything I'd expect a "real" server
 **Repo layout (initial plan which can be changed)**
 ```text
 http-server-ts/
-│
 ├── src/
+│   ├── main.ts                          # entry point 
+│   │
+│   ├── server/
+│   │   └── httpServer.ts                # Core server orchestration
+│   │
+│   ├── routes/
+│   │   └── index.ts                     # Route registration
+│   │
 │   ├── http/
 │   │   ├── builder/
 │   │   │   ├── headerBuilder.ts         # Builds header strings
-│   │   │   ├── responseBuilder.ts       # Fluent API for building responses
+│   │   │   ├── responseBuilder.ts       # Fluent API for responses
 │   │   │   └── statusLine.ts            # Builds "HTTP/1.1 200 OK"
 │   │   │
 │   │   ├── middleware/
-│   │   │   ├── bodyParserMiddleware.ts      # Parses JSON/form data → req.parsedBody
-│   │   │   ├── errorhandlermiddleware.ts    # Global try-catch wrapper
-│   │   │   ├── loggerMiddleware.ts          # Logs requests & responses with timing
-│   │   │   ├── middlewareChain.ts           # Executes middleware in sequence
-│   │   │   └── types.ts                     # Middleware type definition
+│   │   │   ├── bodyParserMiddleware.ts  # Parses JSON/form data
+│   │   │   ├── errorhandlermiddleware.ts# Global error wrapper
+│   │   │   ├── loggerMiddleware.ts      # Request/response logging
+│   │   │   ├── middlewareChain.ts       # Middleware execution
+│   │   │   └── types.ts                 # Middleware types
 │   │   │
 │   │   ├── models/
-│   │   │   ├── headers.ts               # Case-insensitive header storage
-│   │   │   ├── request.ts               # HttpRequest: method, path, headers, body, parsedBody
-│   │   │   ├── response.ts              # HttpResponse: statusCode, headers, body, toString()
-│   │   │   └── StatusCode.ts            # HTTP status codes enum & messages
+│   │   │   ├── headers.ts               # Case-insensitive headers
+│   │   │   ├── request.ts               # HttpRequest model
+│   │   │   ├── response.ts              # HttpResponse model
+│   │   │   └── StatusCode.ts            # HTTP status codes
 │   │   │
 │   │   └── parser/
-│   │       ├── bodyParser.ts            # Extracts body using Content-Length
-│   │       ├── headerParser.ts          # Parses header lines into Headers object
-│   │       ├── requestLine.ts           # Parses "POST /api/users HTTP/1.1"
-│   │       └── requestParser.ts         # Parses complete HTTP request from buffer
-│   │
-│   ├── main.ts                          # Entry point: creates listener, middleware, routes
+│   │       ├── bodyParser.ts            # Body extraction
+│   │       ├── headerParser.ts          # Header parsing
+│   │       ├── requestLine.ts           # Request line parsing
+│   │       └── requestParser.ts         # Complete request parser
 │   │
 │   └── network/
-│       ├── connection.ts                # Wraps socket: onData, onClose, write, close
-│       ├── listener.ts                  # Creates TCP server, accepts connections
-│       └── types.ts                     # IListener, IConnection interfaces
+│       ├── connection.ts                # Socket wrapper with isAlive()
+│       ├── keepAliveManager.ts          # Connection reuse logic 
+│       ├── listener.ts                  # TCP server
+│       ├── requestBuffer.ts             # Zero-copy buffering 
+│       └── types.ts                     # Network interfaces
 │
-└── README.md                            # Project documentation
+├── package.json
+├── tsconfig.json
+└── README.md
+```
 ```
 
 ## Next Steps
