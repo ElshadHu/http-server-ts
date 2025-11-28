@@ -19,6 +19,7 @@ export  class HttpRequest {
     body: string;
     parsedBody?: Record<string,unknown> | undefined;
     rawRequest: string;
+    params?: Record<string, string>;
 
     queryParams: Map<string, string>;
 
@@ -30,6 +31,7 @@ export  class HttpRequest {
         this.body = '';
         this.rawRequest = '';
         this.queryParams = new Map();
+        this.params = {};
     }
 
     // get header value 
@@ -66,6 +68,10 @@ export  class HttpRequest {
 
     getQueryParam(name: string): string | undefined {
         return this.queryParams.get(name);
+    }
+
+    getParam(name: string): string | undefined {
+        return this.params?.[name];
     }
     // string representation
     toString(): string {
