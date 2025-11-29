@@ -5,11 +5,11 @@ import { HttpServer } from "../server/httpServer";
 
 export function registerRoutes(server: HttpServer): void {
     // GET
-    server.route('GET','/', (req:HttpRequest, res:HttpResponse)=> {
+    server.get('/', (req:HttpRequest, res:HttpResponse)=> {
         res.setHtmlBody('<h1>HTTP Server</h1><p>Server is running</p>');
     });
     // GET /status
-    server.route('GET','/status', (req: HttpRequest, res:HttpResponse) => {
+    server.get('/status', (req: HttpRequest, res:HttpResponse) => {
         res.setJsonBody({
             status: 'running',
             uptime: process.uptime(),
@@ -19,7 +19,7 @@ export function registerRoutes(server: HttpServer): void {
         });
     });
 
-    server.route('POST', '/api/users', (req: HttpRequest, res: HttpResponse) => {
+    server.post('/api/users', (req: HttpRequest, res: HttpResponse) => {
        if(!req.parsedBody) {
          res.setStatus(HttpStatusCode.BAD_REQUEST);
          res.setJsonBody({error: 'No body provided'});
@@ -44,5 +44,5 @@ export function registerRoutes(server: HttpServer): void {
          message: 'User created',
          user: {name,age: ageNum}
        });
-    });
+    }); 
 }
