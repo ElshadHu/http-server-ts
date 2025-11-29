@@ -7,6 +7,7 @@ import { HttpRequest } from "../http/models/request";
 import { HttpResponse } from "../http/models/response";
 import { HttpStatusCode } from "../http/models/StatusCode";
 import { MiddlewareChain } from "../http/middleware/middlewareChain";
+import { Router } from "../routes/router";
 
 export interface ServerConfig {
     host: string;
@@ -30,7 +31,7 @@ interface ConnectionContext {
 export class HttpServer {
     private listener: Listener;
     private middlewareChain: MiddlewareChain;
-    private routes: Map<string,RouteHandler>;
+    private router: Router;
     private config: ServerConfig;
 
     constructor(config: ServerConfig) {
@@ -40,22 +41,38 @@ export class HttpServer {
             port: config.port
         });
         this.middlewareChain = new MiddlewareChain();
-        this.routes = new Map();
+        this.router = new Router();
     }
 
     use(middleware: Middleware): void {
         this.middlewareChain.use(middleware);
     }
 
-   route(method: string, path: string, handler: RouteHandler): void {
-      const key = `${method}:${path}`;
-      this.routes.set(key,handler);
-   }
+    get(path: string, handler: RouteHandler): void {
+        this.router.get(path, handler);
+    }
+
+    post(path: string, handler: RouteHandler): void {
+        this.router.post(path, handler);
+    }
+    
+    put(path: string, handler: RouteHandler): void {
+        this.router.put(path, handler);
+    }
+
+    delete(path: string, handler: RouteHandler): void {
+        this.router.delete(path, handler);
+    }
+
+    patch(path: string, handler: RouteHandler): void {
+        this.router.patch(path, handler);
+    }
 
    start(): void {
       this.setupConnectionHandler();
       this.listener.listen();
      console.log(`HTTP Server running on http://${this.config.host}:${this.config.port}`);
+     this.router.printRoutes();
    }
 
    private setupConnectionHandler(): void {
@@ -156,10 +173,10 @@ export class HttpServer {
    }
 
      private handleRoute(req:HttpRequest, res: HttpResponse): void {
-        const key = `${req.method}:${req.path}`;
-        const handler = this.routes.get(key);
-         if(handler) {
-            handler(req,res);
+        const match = this.router.match(req.method, req.path);
+         if(match) {
+            req.params = match.params;
+            match.handler(req, res);
          } else {
             res.setStatus(HttpStatusCode.NOT_FOUND);
             res.setHtmlBody('<h1>404 Not Found</h1>');
