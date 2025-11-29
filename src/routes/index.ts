@@ -45,4 +45,13 @@ export function registerRoutes(server: HttpServer): void {
          user: {name,age: ageNum}
        });
     }); 
+
+    server.get('/api/users/:id', (req: HttpRequest, res: HttpResponse) => {
+       const id = req.getParam('id');
+       res.setJsonBody({
+         id: id,
+         name: `User ${id}`,
+         message: 'Pattern matching works'
+       });
+    });
 }

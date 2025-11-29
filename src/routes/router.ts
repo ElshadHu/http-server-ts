@@ -41,7 +41,9 @@ export class Router {
       const requestSegments = pathname?.split('/').filter(requestSegment => requestSegment.length > 0);
 
       for(const route of this.routes) {
-         if(route.method !== method.toUpperCase()) continue;
+         if(route.method !== method.toUpperCase()) {
+            continue;
+         }
          if(!requestSegments) {
             return null;
          }
