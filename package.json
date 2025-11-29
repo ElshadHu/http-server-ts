@@ -5,10 +5,14 @@
   "type": "commonjs",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/main.js"
+    "start": "node dist/main.js",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\""
+
   },
   "devDependencies": {
     "@types/node": "^24.10.0",
+    "prettier": "^3.7.3",
     "typescript": "^5.9.3"
   }
 }
