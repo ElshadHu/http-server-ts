@@ -50,5 +50,13 @@ export function registerRoutes(server: HttpServer): void {
     });
   });
 
-  server.registerStaticHandler("*", staticHandler);
+  // Static file handler - MUST be last (wildcard route)
+  server.get("*", async (req: HttpRequest, res: HttpResponse, connection) => {
+    if (connection) {
+      await staticHandler.handle(req, res, connection);
+    } else {
+      res.setStatus(HttpStatusCode.INTERNAL_SERVER_ERROR);
+      res.setHtmlBody("<h1>500 Internal Server Error</h1>");
+    }
+  });
 }

@@ -1,7 +1,12 @@
 import { HttpRequest } from "../http/models/request";
 import { HttpResponse } from "../http/models/response";
+import { IConnection } from "../network/types";
 
-type RouteHandler = (req: HttpRequest, res: HttpResponse) => void | Promise<void>;
+type RouteHandler = (
+  req: HttpRequest,
+  res: HttpResponse,
+  connection?: IConnection
+) => void | Promise<void>;
 
 export class Router {
   private routes: Array<{

@@ -9,7 +9,7 @@ export class MiddlewareChain {
     this.middlewares.push(middware);
   }
 
-  run(req: HttpRequest, res: HttpResponse, finalHandler?: () => void): void {
+  run(req: HttpRequest, res: HttpResponse, finalHandler?: () => void | Promise<void>): void {
     let i = 0;
     const next = (): void => {
       if (i >= this.middlewares.length) {

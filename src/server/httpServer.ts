@@ -20,7 +20,11 @@ export interface ServerConfig {
 }
 
 type Middleware = (req: HttpRequest, res: HttpResponse, next: () => void) => void;
-type RouteHandler = (req: HttpRequest, res: HttpResponse) => void;
+type RouteHandler = (
+  req: HttpRequest,
+  res: HttpResponse,
+  connection?: IConnection
+) => void | Promise<void>;
 
 interface ConnectionContext {
   connection: IConnection;
@@ -131,12 +135,17 @@ export class HttpServer {
     const response: HttpResponse = new HttpResponse();
     context.response = response;
 
-    this.middlewareChain.run(request, response, () => {
-      this.handleRoute(request, response);
+    this.middlewareChain.run(request, response, async () => {
+      await this.handleRoute(request, response, connection);
     });
 
     this.addKeepAliveHeaders(context);
-    await this.sendResponse(context);
+
+    // Only send response if not already streamed
+    if (!response.isStreamed) {
+      await this.sendResponse(context);
+    }
+
     this.manageConnectionLifecycle(context);
 
     requestBuffer.reset();
@@ -170,11 +179,15 @@ export class HttpServer {
     }
   }
 
-  private handleRoute(req: HttpRequest, res: HttpResponse): void {
+  private async handleRoute(
+    req: HttpRequest,
+    res: HttpResponse,
+    connection: IConnection
+  ): Promise<void> {
     const match = this.router.match(req.method, req.path);
     if (match) {
       req.params = match.params;
-      match.handler(req, res);
+      await match.handler(req, res, connection);
     } else {
       res.setStatus(HttpStatusCode.NOT_FOUND);
       res.setHtmlBody("<h1>404 Not Found</h1>");
