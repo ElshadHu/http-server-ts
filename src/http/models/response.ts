@@ -4,7 +4,7 @@ import { HttpStatusCode, getStatusMessage } from "./StatusCode";
 export class HttpResponse {
   statusCode: HttpStatusCode;
   headers: Headers;
-  body: string;
+  body: string | Buffer;
   version: string;
 
   constructor(statusCode: HttpStatusCode = HttpStatusCode.OK) {
@@ -24,9 +24,12 @@ export class HttpResponse {
   }
   // set Resonse body and content-length
 
-  setBody(body: string): void {
+  setBody(body: string | Buffer): void {
     this.body = body;
-    this.headers.setContentLength(Buffer.byteLength(body));
+    const length = Buffer.isBuffer(body)
+    ? body.length
+    :Buffer.byteLength(body);
+    this.headers.setContentLength(length);
   }
 
   //set json body
@@ -48,7 +51,11 @@ export class HttpResponse {
 
     response += this.headers.toString();
     response += "\r\n";
-    response += this.body;
-    return response;
+    
+    if(Buffer.isBuffer(this.body)) {
+      return response + this.body.toString('binary');
+    } else {
+      return response + this.body;
+    }
   }
 }
