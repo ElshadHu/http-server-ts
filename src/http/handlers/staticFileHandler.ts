@@ -39,6 +39,7 @@ export class StaticFileHandler {
     response: HttpResponse,
     connection: IConnection
   ): Promise<void> {
+    console.log("[Static] handle called for", request.path);
     const requestedPath = this.normalizeRequestPath(request.path);
     const filePath = this.resolveFilePath(requestedPath);
 
@@ -152,6 +153,7 @@ export class StaticFileHandler {
   }
 
   private async streamLargeFile(fileStats: fs.Stats, context: FileContext): Promise<void> {
+    console.log("[Static] streamLargeFile", context.filePath, fileStats.size);
     context.response.isStreamed = true;
 
     const fileETag = this.generateLargeFileETag(fileStats);

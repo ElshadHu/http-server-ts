@@ -13,7 +13,7 @@ import * as crypto from "crypto";
  * - Least recently used files are at the START of the array
  * - When cache is full, removes files from the START (oldest/least used)
  * - Every get() moves that file to the END (marking it as recently used)
- * ETAG GENERATION:
+ * ETAG GENERATION: unique fingerprint for a file's content
  * - Creates MD5 hash of file content as ETag
  * - Used for HTTP 304 Not Modified responses
  * - Allows browsers to use their cached version if file unchanged

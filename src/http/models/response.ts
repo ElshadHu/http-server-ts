@@ -59,10 +59,10 @@ export class HttpResponse {
   }
 
   getHeaderString(): string {
-     const statusMessage = getStatusMessage(this.statusCode);
-     let response = `${this.version} ${this.statusCode} ${statusMessage}\r\n`;
-     response += this.headers.toString();
-     response += "\r\n";
-     return response;
+    const statusMessage = getStatusMessage(this.statusCode);
+    let response = `${this.version} ${this.statusCode} ${statusMessage}\r\n`;
+    response += this.headers.toString();
+    response += "\r\n";
+    return response;
   }
 }
