@@ -6,6 +6,7 @@ export class HttpResponse {
   headers: Headers;
   body: string | Buffer;
   version: string;
+  isStreamed: boolean = false;
 
   constructor(statusCode: HttpStatusCode = HttpStatusCode.OK) {
     this.statusCode = statusCode;
@@ -26,9 +27,7 @@ export class HttpResponse {
 
   setBody(body: string | Buffer): void {
     this.body = body;
-    const length = Buffer.isBuffer(body)
-    ? body.length
-    :Buffer.byteLength(body);
+    const length = Buffer.isBuffer(body) ? body.length : Buffer.byteLength(body);
     this.headers.setContentLength(length);
   }
 
@@ -51,9 +50,9 @@ export class HttpResponse {
 
     response += this.headers.toString();
     response += "\r\n";
-    
-    if(Buffer.isBuffer(this.body)) {
-      return response + this.body.toString('binary');
+
+    if (Buffer.isBuffer(this.body)) {
+      return response + this.body.toString("binary");
     } else {
       return response + this.body;
     }
