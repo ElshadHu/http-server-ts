@@ -57,4 +57,12 @@ export class HttpResponse {
       return response + this.body;
     }
   }
+
+  getHeaderString(): string {
+     const statusMessage = getStatusMessage(this.statusCode);
+     let response = `${this.version} ${this.statusCode} ${statusMessage}\r\n`;
+     response += this.headers.toString();
+     response += "\r\n";
+     return response;
+  }
 }
