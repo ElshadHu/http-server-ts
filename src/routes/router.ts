@@ -1,7 +1,7 @@
 import { HttpRequest } from "../http/models/request";
 import { HttpResponse } from "../http/models/response";
 
-type RouteHandler = (req: HttpRequest, res: HttpResponse) => void;
+type RouteHandler = (req: HttpRequest, res: HttpResponse) => void | Promise<void>;
 
 export class Router {
   private routes: Array<{
@@ -31,7 +31,8 @@ export class Router {
   }
 
   private addRoute(method: string, path: string, handler: RouteHandler): void {
-    const segments = path.split("/").filter(stringSegment => stringSegment.length > 0);
+    const segments =
+      path === "*" ? ["*"] : path.split("/").filter(stringSegment => stringSegment.length > 0);
     this.routes.push({ method, path, handler, segments });
     console.log(`Router: ${method} ${path}`);
   }
@@ -48,6 +49,10 @@ export class Router {
     for (const route of this.routes) {
       if (route.method !== method.toUpperCase()) {
         continue;
+      }
+
+      if (route.path === "*") {
+        return { handler: route.handler, params: {} };
       }
       if (!requestSegments) {
         return null;
