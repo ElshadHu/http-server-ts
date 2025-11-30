@@ -1,13 +1,11 @@
+import { StaticFileHandler } from "../http/handlers/staticFileHandler";
 import { HttpRequest } from "../http/models/request";
 import { HttpResponse } from "../http/models/response";
 import { HttpStatusCode } from "../http/models/StatusCode";
 import { HttpServer } from "../server/httpServer";
 
 export function registerRoutes(server: HttpServer): void {
-  // GET
-  server.get("/", (req: HttpRequest, res: HttpResponse) => {
-    res.setHtmlBody("<h1>HTTP Server</h1><p>Server is running</p>");
-  });
+  const staticHandler = new StaticFileHandler("./public");
   // GET /status
   server.get("/status", (req: HttpRequest, res: HttpResponse) => {
     res.setJsonBody({
@@ -51,4 +49,6 @@ export function registerRoutes(server: HttpServer): void {
       message: "Pattern matching works",
     });
   });
+
+  server.registerStaticHandler("*", staticHandler);
 }
