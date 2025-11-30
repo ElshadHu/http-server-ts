@@ -7,12 +7,12 @@ import { getMimeType } from "../../utils/mimeTypes";
 import { FileCache } from "../../utils/fileCache";
 import { IConnection } from "../../network/types";
 
-interface FileContext {
+type FileContext = {
   filePath: string;
   request: HttpRequest;
   response: HttpResponse;
   connection: IConnection;
-}
+};
 
 /**
  * Static File Handler
