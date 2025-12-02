@@ -1,12 +1,27 @@
 import { HttpRequest } from "../http/models/request";
 import { HttpResponse } from "../http/models/response";
 import { IConnection } from "../network/types";
+import { KeepAliveManager } from "../network/keepAliveManager";
 
-type RouteHandler = (
-  req: HttpRequest,
-  res: HttpResponse,
-  connection?: IConnection
-) => void | Promise<void>;
+// Discriminated union for route handlers
+type SimpleRouteHandler = {
+  type: "simple";
+  handler: (req: HttpRequest, res: HttpResponse) => void | Promise<void>;
+};
+
+type ContextRouteHandler = {
+  type: "context";
+  handler: (
+    req: HttpRequest,
+    res: HttpResponse,
+    context: {
+      connection: IConnection;
+      keepAliveManager: KeepAliveManager;
+    }
+  ) => void | Promise<void>;
+};
+
+type RouteHandler = SimpleRouteHandler | ContextRouteHandler;
 
 export class Router {
   private routes: Array<{
