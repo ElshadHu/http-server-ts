@@ -175,8 +175,11 @@ export class HttpServer {
     const response: HttpResponse = new HttpResponse();
     context.response = response;
 
-    this.middlewareChain.run(request, response, async () => {
-      await this.handleRoute(request, response, context);
+    await new Promise<void>(resolve => {
+      this.middlewareChain.run(request, response, async () => {
+        await this.handleRoute(request, response, context);
+        resolve();
+      });
     });
 
     this.addKeepAliveHeaders(context);

@@ -6,7 +6,8 @@ import { HttpServer } from "../server/httpServer";
 
 export function registerRoutes(server: HttpServer): void {
   const staticHandler = new StaticFileHandler("./public");
-  // GET /status
+
+  // Simple routes - no context needed
   server.get("/status", (req: HttpRequest, res: HttpResponse) => {
     res.setJsonBody({
       status: "running",
@@ -50,13 +51,12 @@ export function registerRoutes(server: HttpServer): void {
     });
   });
 
-  // Static file handler - MUST be last (wildcard route)
-  server.get("*", async (req: HttpRequest, res: HttpResponse, connection) => {
-    if (connection) {
-      await staticHandler.handle(req, res, connection);
-    } else {
-      res.setStatus(HttpStatusCode.INTERNAL_SERVER_ERROR);
-      res.setHtmlBody("<h1>500 Internal Server Error</h1>");
-    }
+  // Static file handler - context-aware (streaming)
+  // MUST be last (wildcard route)
+  server.get("*", {
+    type: "context",
+    handler: async (req: HttpRequest, res: HttpResponse, context) => {
+      await staticHandler.handle(req, res, context);
+    },
   });
 }
