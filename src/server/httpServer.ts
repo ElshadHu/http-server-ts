@@ -111,7 +111,7 @@ export class HttpServer {
     context: ConnectionContext,
     data: Buffer | string
   ): Promise<void> {
-    const { connection, requestBuffer, keepAliveManager } = context;
+    const { connection, requestBuffer } = context;
     const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data);
 
     if (requestBuffer.getSize() + chunk.length > 10 * 1024 * 1024) {
@@ -202,7 +202,7 @@ export class HttpServer {
         errorResponse.setHtmlBody("<h1>500 Internal Server Error</h1>");
         await conn.write(errorResponse.toString());
       }
-    } catch {}
+    } catch { }
     if (conn.isAlive()) {
       conn.close();
     }
