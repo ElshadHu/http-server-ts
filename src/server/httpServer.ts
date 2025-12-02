@@ -20,11 +20,26 @@ export interface ServerConfig {
 }
 
 type Middleware = (req: HttpRequest, res: HttpResponse, next: () => void) => void;
-type RouteHandler = (
-  req: HttpRequest,
-  res: HttpResponse,
-  connection?: IConnection
-) => void | Promise<void>;
+
+// Discriminated union for route handlers
+type SimpleRouteHandler = {
+  type: "simple";
+  handler: (req: HttpRequest, res: HttpResponse) => void | Promise<void>;
+};
+
+type ContextRouteHandler = {
+  type: "context";
+  handler: (
+    req: HttpRequest,
+    res: HttpResponse,
+    context: {
+      connection: IConnection;
+      keepAliveManager: KeepAliveManager;
+    }
+  ) => void | Promise<void>;
+};
+
+type RouteHandler = SimpleRouteHandler | ContextRouteHandler;
 
 interface ConnectionContext {
   connection: IConnection;
@@ -52,24 +67,49 @@ export class HttpServer {
     this.middlewareChain.use(middleware);
   }
 
-  get(path: string, handler: RouteHandler): void {
-    this.router.get(path, handler);
+  // Simple handler (no context)
+  get(path: string, handler: (req: HttpRequest, res: HttpResponse) => void | Promise<void>): void;
+  // Context handler (with connection and keepAliveManager)
+  get(path: string, handler: RouteHandler): void;
+  get(path: string, handler: any): void {
+    const wrappedHandler: RouteHandler =
+      typeof handler === "function" ? { type: "simple", handler } : handler;
+    this.router.get(path, wrappedHandler);
   }
 
-  post(path: string, handler: RouteHandler): void {
-    this.router.post(path, handler);
+  post(path: string, handler: (req: HttpRequest, res: HttpResponse) => void | Promise<void>): void;
+  post(path: string, handler: RouteHandler): void;
+  post(path: string, handler: any): void {
+    const wrappedHandler: RouteHandler =
+      typeof handler === "function" ? { type: "simple", handler } : handler;
+    this.router.post(path, wrappedHandler);
   }
 
-  put(path: string, handler: RouteHandler): void {
-    this.router.put(path, handler);
+  put(path: string, handler: (req: HttpRequest, res: HttpResponse) => void | Promise<void>): void;
+  put(path: string, handler: RouteHandler): void;
+  put(path: string, handler: any): void {
+    const wrappedHandler: RouteHandler =
+      typeof handler === "function" ? { type: "simple", handler } : handler;
+    this.router.put(path, wrappedHandler);
   }
 
-  delete(path: string, handler: RouteHandler): void {
-    this.router.delete(path, handler);
+  delete(
+    path: string,
+    handler: (req: HttpRequest, res: HttpResponse) => void | Promise<void>
+  ): void;
+  delete(path: string, handler: RouteHandler): void;
+  delete(path: string, handler: any): void {
+    const wrappedHandler: RouteHandler =
+      typeof handler === "function" ? { type: "simple", handler } : handler;
+    this.router.delete(path, wrappedHandler);
   }
 
-  patch(path: string, handler: RouteHandler): void {
-    this.router.patch(path, handler);
+  patch(path: string, handler: (req: HttpRequest, res: HttpResponse) => void | Promise<void>): void;
+  patch(path: string, handler: RouteHandler): void;
+  patch(path: string, handler: any): void {
+    const wrappedHandler: RouteHandler =
+      typeof handler === "function" ? { type: "simple", handler } : handler;
+    this.router.patch(path, wrappedHandler);
   }
 
   start(): void {
@@ -136,7 +176,7 @@ export class HttpServer {
     context.response = response;
 
     this.middlewareChain.run(request, response, async () => {
-      await this.handleRoute(request, response, connection);
+      await this.handleRoute(request, response, context);
     });
 
     this.addKeepAliveHeaders(context);
@@ -182,12 +222,22 @@ export class HttpServer {
   private async handleRoute(
     req: HttpRequest,
     res: HttpResponse,
-    connection: IConnection
+    context: ConnectionContext
   ): Promise<void> {
     const match = this.router.match(req.method, req.path);
     if (match) {
       req.params = match.params;
-      await match.handler(req, res, connection);
+      const routeHandler = match.handler;
+
+      // Discriminated union: call handler based on type
+      if (routeHandler.type === "simple") {
+        await routeHandler.handler(req, res);
+      } else {
+        await routeHandler.handler(req, res, {
+          connection: context.connection,
+          keepAliveManager: context.keepAliveManager,
+        });
+      }
     } else {
       res.setStatus(HttpStatusCode.NOT_FOUND);
       res.setHtmlBody("<h1>404 Not Found</h1>");
@@ -202,7 +252,7 @@ export class HttpServer {
         errorResponse.setHtmlBody("<h1>500 Internal Server Error</h1>");
         await conn.write(errorResponse.toString());
       }
-    } catch { }
+    } catch {}
     if (conn.isAlive()) {
       conn.close();
     }
