@@ -17,10 +17,11 @@ Because, I keep making dumb mistakes in TypeScript and wanted to finally get goo
 - After that, add stuff: headers, methods, routes, maybe serve a file, maybe log a bug. As a result of it, with small challenges, I want to reach my goal and have my own http server (even if it is slow). - Done
 - Optimize with Keep Alive: That was spontaneous though , i was creating a connection for each request :)
 - Refactor to clean architecture:  Heyy at least I tried
-- Add Connection Pooling (I got no idea I will figure out :)) 
 - Response compression: (I will figure it out)
-- Static file caching: (I will figure it out)
-
+- Static file caching: Done 99 %
+- **Write tests!** - I gotta do that for reducing manual testing
+- Better Error messaging for debugging
+- I gotta find bottlenecks and focus on them , I already found but, hey I need time :(
 - I gotta figure out other stuff
 
 ## Quick Start
@@ -30,6 +31,8 @@ npm install
 npm run build
 
 npm start
+
+npm run format
 
 # Server runs on http://127.0.0.1:8080
 ```
@@ -70,7 +73,8 @@ http-server-ts/
 │   │   └── httpServer.ts                # Core server orchestration
 │   │
 │   ├── routes/
-│   │   └── index.ts                     # Route registration
+│   │    ├── index.ts                # Route registration
+│   │    └── router.ts               # Path matching & dispatch
 │   │
 │   ├── http/
 │   │   ├── builder/
@@ -78,6 +82,9 @@ http-server-ts/
 │   │   │   ├── responseBuilder.ts       # Fluent API for responses
 │   │   │   └── statusLine.ts            # Builds "HTTP/1.1 200 OK"
 │   │   │
+│   │   │── handlers/
+│   │   │      └── staticFileHandler.ts # Serve files from disk or cache 
+│   │   │  
 │   │   ├── middleware/
 │   │   │   ├── bodyParserMiddleware.ts  # Parses JSON/form data
 │   │   │   ├── errorhandlermiddleware.ts# Global error wrapper
@@ -97,13 +104,16 @@ http-server-ts/
 │   │       ├── requestLine.ts           # Request line parsing
 │   │       └── requestParser.ts         # Complete request parser
 │   │
-│   └── network/
-│       ├── connection.ts                # Socket wrapper with isAlive()
-│       ├── keepAliveManager.ts          # Connection reuse logic 
-│       ├── listener.ts                  # TCP server
-│       ├── requestBuffer.ts             # Zero-copy buffering 
-│       └── types.ts                     # Network interfaces
-│
+│   │── network/
+│   │   ├── connection.ts                # Socket wrapper with isAlive()
+│   │   ├── keepAliveManager.ts          # Connection reuse logic 
+│   │   ├── listener.ts                  # TCP server
+│   │   ├── requestBuffer.ts             # Zero-copy buffering 
+│   │   └── types.ts                     # Network interfaces
+│   │── utils/
+│         ├── fileCache.ts            # LRU cache
+│         └── mimeTypes.ts            # File extension
+│  
 ├── package.json
 ├── tsconfig.json
 └── README.md
