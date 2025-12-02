@@ -6,12 +6,14 @@ import { HttpStatusCode } from "../models/StatusCode";
 import { getMimeType } from "../../utils/mimeTypes";
 import { FileCache } from "../../utils/fileCache";
 import { IConnection } from "../../network/types";
+import { KeepAliveManager } from "../../network/keepAliveManager";
 
 type FileContext = {
   filePath: string;
   request: HttpRequest;
   response: HttpResponse;
   connection: IConnection;
+  keepAliveManager: KeepAliveManager;
 };
 
 /**
@@ -37,7 +39,10 @@ export class StaticFileHandler {
   async handle(
     request: HttpRequest,
     response: HttpResponse,
-    connection: IConnection
+    context: {
+      connection: IConnection;
+      keepAliveManager: KeepAliveManager;
+    }
   ): Promise<void> {
     console.log("[Static] handle called for", request.path);
     const requestedPath = this.normalizeRequestPath(request.path);
@@ -50,16 +55,22 @@ export class StaticFileHandler {
       return;
     }
 
-    const context: FileContext = { filePath, request, response, connection };
+    const fileContext: FileContext = {
+      filePath,
+      request,
+      response,
+      connection: context.connection,
+      keepAliveManager: context.keepAliveManager,
+    };
 
     // Try cache first
     const cachedFile = this.fileCache.get(filePath);
     if (cachedFile) {
-      this.serveCachedFile(cachedFile, context);
+      this.serveCachedFile(cachedFile, fileContext);
       return;
     }
 
-    await this.serveFromDisk(context);
+    await this.serveFromDisk(fileContext);
   }
 
   private normalizeRequestPath(requestPath: string): string {
@@ -175,7 +186,13 @@ export class StaticFileHandler {
     context.response.headers.set("Last-Modified", fileStats.mtime.toUTCString());
     context.response.headers.set("ETag", fileETag);
     context.response.headers.set("Cache-Control", "public, max-age=86400");
-    context.response.headers.set("Connection", "keep-alive");
+
+    // KeepAliveManager instead of hardcoding keep-alive
+    context.response.headers.set("Connection", context.keepAliveManager.getConnectionHeader());
+    if (context.keepAliveManager.shouldKeepAlive()) {
+      context.response.headers.set("Keep-Alive", context.keepAliveManager.getKeepAliveHeader());
+    }
+
     await context.connection.write(context.response.getHeaderString());
 
     const chunkSize = this.selectChunkSize(fileStats.size);
